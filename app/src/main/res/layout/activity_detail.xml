@@ -1,0 +1,73 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+
+    android:clipChildren="false"
+    tools:context="za.co.samtakie.djoga.popmovies.MainActivity">
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#009688"
+        android:fontFamily="sans-serif-light"
+        android:maxLines="2"
+        android:padding="30dp"
+        android:text="@string/movie_title"
+        android:textColor="@android:color/white"
+        android:textSize="40sp" />
+
+    <ImageView
+        android:id="@+id/poster"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/title"
+        android:contentDescription="@string/poster_description"
+        android:paddingBottom="8dp"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+        android:paddingTop="8dp"
+        android:src="@drawable/image_background"
+        android:transitionName="poster"
+        android:scaleType="centerCrop"/>
+
+    <TextView
+        android:id="@+id/release_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@id/poster"
+        android:layout_below="@id/title"
+        android:layout_toEndOf="@id/poster"
+        android:paddingEnd="16dp"
+        android:paddingStart="16dp"
+        android:paddingTop="8dp"
+        android:text="@string/release_date"
+        android:textSize="23sp" />
+
+    <TextView
+        android:id="@+id/rating"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/release_date"
+        android:layout_toEndOf="@id/poster"
+        android:paddingEnd="16dp"
+        android:paddingStart="16dp"
+        android:paddingTop="8dp"
+        android:text="@string/rating_score" />
+
+    <TextView
+        android:id="@+id/synopsis"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="false"
+        android:layout_below="@id/poster"
+        android:lineSpacingMultiplier="1.15"
+        android:padding="16dp"
+        android:text="@string/movie_overview" />
+    </RelativeLayout>
+
+</ScrollView>
