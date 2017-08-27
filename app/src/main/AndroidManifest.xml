@@ -21,7 +21,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="za.co.samtakie.djoga.popmovies.Detail"
+            android:name="za.co.samtakie.djoga.popmovies.DetailActivity"
             android:parentActivityName="za.co.samtakie.djoga.popmovies.MainActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"

@@ -14,7 +14,7 @@ import java.util.ArrayList;
 
 import static za.co.samtakie.djoga.popmovies.R.id.poster;
 
-public class Detail extends AppCompatActivity {
+public class DetailActivity extends AppCompatActivity {
 
 
     private ImageView ivPoster;

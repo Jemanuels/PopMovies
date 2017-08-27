@@ -70,7 +70,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         ArrayList<MovieItem> movies;
 
         Context context = this;
-        Class destinationClass = Detail.class;
+        Class destinationClass = DetailActivity.class;
         Intent intent = new Intent(context, destinationClass);
         movies = new ArrayList<>();
         movies.add(new MovieItem(movieForDay.get(moviePosition).getOriginalTitle(),
@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
                 movieForDay.get(moviePosition).getBackdropPath(),
                 movieForDay.get(moviePosition).getRating()));
         intent.putParcelableArrayListExtra("movieForDay", movies);
-        intent.putExtra(Detail.HEADER_ID, moviePosition);
+        intent.putExtra(DetailActivity.HEADER_ID, moviePosition);
         ActivityOptions activityOptionsCompat = ActivityOptions.makeSceneTransitionAnimation(this,
                 view.findViewById(R.id.iv_movie), "poster");
         startActivity(intent, activityOptionsCompat.toBundle());
