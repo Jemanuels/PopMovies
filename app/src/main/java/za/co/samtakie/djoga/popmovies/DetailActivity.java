@@ -7,39 +7,41 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.TextView;
-
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 
 import static za.co.samtakie.djoga.popmovies.R.id.poster;
 
+
 public class DetailActivity extends AppCompatActivity {
 
 
-    private ImageView ivPoster;
     private static final String BASE_URL_TMDB = "http://image.tmdb.org/t/p/";
     public static final String HEADER_ID = "detail_id";
+    @BindView(R.id.title) TextView tvTitle;
+    @BindView(R.id.release_date) TextView tvReleaseDate;
+    @BindView(R.id.synopsis)TextView tvOverView;
+    @BindView(R.id.rating) TextView tvContainer;
+    @BindView(poster) ImageView ivPoster;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
-
-        TextView tvTitle;
-        TextView tvReleaseDate;
-        TextView tvOverView;
-        TextView tvContainer;
-
         String posterW185 = "w185";
-
+        ButterKnife.bind(this);
+        /*
         ivPoster = (ImageView) findViewById(poster);
         tvTitle = (TextView) findViewById(R.id.title);
         tvReleaseDate = (TextView) findViewById(R.id.release_date);
         tvOverView = (TextView) findViewById(R.id.synopsis);
         tvContainer = (TextView) findViewById(R.id.rating);
-
+        */
 
         Intent intent = getIntent();
 

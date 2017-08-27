@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -23,13 +24,13 @@ import java.util.ArrayList;
 import za.co.samtakie.djoga.popmovies.utilities.NetworkUtils;
 import za.co.samtakie.djoga.popmovies.utilities.OpenMovieJsonUtils;
 
-
-public class MainActivity extends AppCompatActivity implements MovieAdapter.MovieAdapterOnClickHandler{
+public class MainActivity extends AppCompatActivity implements MovieAdapter.MovieAdapterOnClickHandler, SharedPreferences.OnSharedPreferenceChangeListener{
 
     private RecyclerView mRecyclerView;
     private MovieAdapter mMovieAdapter;
     private TextView mErrorMessage;
     private ProgressBar mLoadingIndicator;
+    public static final String SORT_EXAMPLE = "example_list";
 
 
     @Override
@@ -46,7 +47,8 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         mRecyclerView.setAdapter(mMovieAdapter);
         mLoadingIndicator = (ProgressBar) findViewById(R.id.pb_loader);
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        String sortByOrder = sharedPreferences.getString("example_list", "1");
+        String sortByOrder = sharedPreferences.getString(SORT_EXAMPLE, "0");
+        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
 
 
         if(Integer.parseInt(sortByOrder) == 1){
@@ -54,7 +56,12 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         } else if(Integer.parseInt(sortByOrder) == 0){
             loadMovieData("top_rated");
         }
+
+
     }
+
+
+
 
 
     private void loadMovieData(String orderType){
@@ -98,6 +105,20 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
         mRecyclerView.setVisibility(View.INVISIBLE);
         mErrorMessage.setVisibility(View.VISIBLE);
+
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
+        if(s.equals(SORT_EXAMPLE)){
+            Log.d("Check return data ", sharedPreferences.getString(s, ""));
+            if(Integer.parseInt(sharedPreferences.getString(s, "")) == 1){
+                loadMovieData("popular");
+            } else if(Integer.parseInt(sharedPreferences.getString(s, "")) == 0){
+                loadMovieData("top_rated");
+            }
+
+        }
 
     }
 
