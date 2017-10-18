@@ -1,6 +1,7 @@
 package za.co.samtakie.djoga.popmovies;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -9,7 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import com.squareup.picasso.Picasso;
-import java.util.ArrayList;
+
 
 /**
  * Created by CPT on 8/12/2017.
@@ -19,20 +20,25 @@ import java.util.ArrayList;
 public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapterViewHolder> {
 
     private final Context contextMain;
-    private ArrayList<MovieItem> movieItem;
     private final MovieAdapterOnClickHandler mMovieClickHandler;
+    private static final String TAG = "MainActivity";
 
     /**
      * An on-click handler that we're defined to make it easy for an Activity to interface with
      * our RecyclerView
      */
     public interface MovieAdapterOnClickHandler{
-        void onClick(ArrayList<MovieItem> movieForDay, int moviePosition, View view);
+        //void onClick(Cursor movieForDay, int moviePosition, View view);
+        void onClick(int moviePosition, View view);
     }
+
+    // Declare a private Cursor field called mCursor
+    private Cursor mCursor;
 
     public MovieAdapter(MovieAdapterOnClickHandler clickHandler, Context context){
         this.contextMain = context;
         mMovieClickHandler = clickHandler;
+        Log.d(TAG, "Item has been clicked");
 
     }
 
@@ -51,9 +57,10 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
         public void onClick(View view) {
 
             int adapterPosition = getAdapterPosition();
-            ArrayList<MovieItem> movieForDay = movieItem;
-            mMovieClickHandler.onClick(movieForDay, adapterPosition, view);
 
+            mCursor.moveToPosition(adapterPosition);
+            int mMovieID = mCursor.getInt(MainActivity.INDEX_COLUMN_MOVIEID);
+            mMovieClickHandler.onClick(mMovieID, view);
         }
 
     }
@@ -72,34 +79,30 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
 
     @Override
     public void onBindViewHolder(final MovieAdapterViewHolder holder, int position) {
+        mCursor.moveToPosition(position);
 
-        String movieForTheDay = movieItem.get(position).getPosterPath();
+        String movieForTheDay = mCursor.getString(MainActivity.INDEX_COLUMN_POSTER_PATH);
         String url = "http://image.tmdb.org/t/p/w185" + movieForTheDay;
         Picasso.with(contextMain).setLoggingEnabled(true);
         Picasso.with(contextMain).load(url).error(R.drawable.error_img).placeholder(R.drawable.image_background).into(holder.mMovieImageView);
-        ViewCompat.setTransitionName(holder.mMovieImageView, movieItem.get(position).getOriginalTitle());
+        ViewCompat.setTransitionName(holder.mMovieImageView, mCursor.getString(MainActivity.INDEX_COLUMN_ORIGINAL_TITLE));
 
     }
 
     @Override
     public int getItemCount() {
 
-        if(movieItem == null){
+        if(mCursor == null){
 
             return 0;
         } else {
 
-            return movieItem.size();
+            return mCursor.getCount();
         }
     }
 
-
-
-    public void setMovieData(ArrayList<MovieItem> movieData){
-
-        movieItem = movieData;
+    void swapCursor(Cursor newCursor){
+        mCursor = newCursor;
         notifyDataSetChanged();
-
     }
-
 }

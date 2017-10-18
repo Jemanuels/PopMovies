@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:id="@+id/constraintLayout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+
+    <TextView
+        android:id="@+id/tv_author"
+        android:layout_width="357dp"
+        android:layout_height="34dp"
+        android:layout_marginEnd="71dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:maxLines="1"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:visibility="visible"
+
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/constraintLayout"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Jurgen Emanuels" />
+
+    <TextView
+        android:id="@+id/tv_content"
+        android:layout_width="367dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:layout_constraintEnd_toEndOf="@+id/constraintLayout"
+        app:layout_constraintLeft_toLeftOf="@+id/tv_author"
+        app:layout_constraintTop_toBottomOf="@+id/tv_author"
+        tools:text="1,287"
+        android:layout_marginStart="1dp" />
+
+</android.support.constraint.ConstraintLayout>

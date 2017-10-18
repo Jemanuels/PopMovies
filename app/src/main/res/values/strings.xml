@@ -8,20 +8,28 @@
     <string name="release_date">2017&#8211;08&#8211;21</string>
     <string name="rating_score">7.9</string>
 
+    <!-- MoviePlayer -->
+    <string name="player_icon_des">Plays the trailer clip</string>
+
+    <!-- Trailer -->
+    <string name="line_separator_desc">Line separator</string>
+
     <!-- Strings related to Settings -->
     <!-- Example General settings -->
-    <string name="pref_header_general">General</string>
 
     <string name="pref_title_sort">Sort By</string>
+    <!-- Key name for storing sort order in SharedPreferences -->
+    <string name="pref_sort_key" translatable="false">sort_by</string>
+    <string name="pref_sort_label_popular">Popular</string>
+    <string name="pref_sort_label_toprated">Top Rated</string>
+    <string name="pref_sort_label_favorite">Favorite</string>
 
-    <string-array name="pref_sort_list_titles">
-        <item>Popular</item>
-        <item>Top Rated</item>
-    </string-array>
+    <string name="pref_sort_popular">0</string>
+    <string name="pref_sort_toprated">1</string>
+    <string name="pref_sort_favorite">2</string>
 
-    <string-array name="pref_sort_list_values">
-        <item>1</item>
-        <item>0</item>
-    </string-array>
+
+    <!-- Youtube player string resources -->
+    <string name="player_error">Error initializing YouTube player: %s</string>
 
 </resources>

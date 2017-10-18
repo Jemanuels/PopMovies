@@ -16,6 +16,9 @@
         <item name="android:windowSharedElementExitTransition">
             @transition/movie_detail_transition
         </item>
+
+        <!-- Used for settings preference theme -->
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
     </style>
 
 </resources>

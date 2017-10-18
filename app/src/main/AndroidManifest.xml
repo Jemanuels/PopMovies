@@ -13,7 +13,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="AllowBackup,GoogleAppIndexingWarning">
-        <activity android:name="za.co.samtakie.djoga.popmovies.MainActivity">
+        <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -21,20 +21,31 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="za.co.samtakie.djoga.popmovies.DetailActivity"
-            android:parentActivityName="za.co.samtakie.djoga.popmovies.MainActivity">
+            android:name=".DetailActivity"
+            android:parentActivityName=".MainActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="za.co.samtakie.djoga.popmovies.MainActivity" />
         </activity>
         <activity
-            android:name="za.co.samtakie.djoga.popmovies.SettingsActivity"
-            android:label="@string/title_activity_settings"
-            android:parentActivityName="za.co.samtakie.djoga.popmovies.MainActivity">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="za.co.samtakie.djoga.popmovies.MainActivity" />
-        </activity>
+            android:name=".SettingsActivity"
+            android:label="@string/title_activity_settings"/>
+
+
+        <activity android:name=".MoviePlayer"/>
+        <!--
+        Register the MovieContentProvider
+        Set name, authorities, and exported attributes
+        exported = false limits access to this ContentProvider to only this app
+        -->
+        <provider
+            android:authorities="za.co.samtakie.djoga.popmovies"
+            android:name="za.co.samtakie.djoga.popmovies.data.MovieContentProvider"
+            android:exported="false"/>
+
+        <service
+            android:name=".sync.MovieSyncIntentService"
+            android:exported="false" />
     </application>
 
 </manifest>

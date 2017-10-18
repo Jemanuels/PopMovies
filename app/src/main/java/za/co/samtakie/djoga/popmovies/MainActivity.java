@@ -4,33 +4,82 @@ import android.app.ActivityOptions;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.AsyncTask;
+import android.database.Cursor;
+import android.net.Uri;
 import android.preference.PreferenceManager;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import java.net.URL;
-import java.util.ArrayList;
 
-import za.co.samtakie.djoga.popmovies.utilities.NetworkUtils;
-import za.co.samtakie.djoga.popmovies.utilities.OpenMovieJsonUtils;
+import za.co.samtakie.djoga.popmovies.data.MovieListContract;
+import za.co.samtakie.djoga.popmovies.sync.MovieSyncUtils;
 
-public class MainActivity extends AppCompatActivity implements MovieAdapter.MovieAdapterOnClickHandler, SharedPreferences.OnSharedPreferenceChangeListener{
+import static za.co.samtakie.djoga.popmovies.R.menu.movie;
+
+@SuppressWarnings({"WeakerAccess", "unused"})
+public class MainActivity extends AppCompatActivity implements
+        MovieAdapter.MovieAdapterOnClickHandler,
+        LoaderManager.LoaderCallbacks<Cursor>{
 
     private RecyclerView mRecyclerView;
     private MovieAdapter mMovieAdapter;
+    private int mPosition = RecyclerView.NO_POSITION;
     private TextView mErrorMessage;
     private ProgressBar mLoadingIndicator;
-    public static final String SORT_EXAMPLE = "example_list";
+
+    // Set the name of the class for using the Log function to print data on the screen
+    private final String TAG = MainActivity.class.getSimpleName();
+
+    /*
+     * The columns of data that we are interested in displaying within our MainActivity's list of
+     * movie data.
+     */
+    public static final String[] MAIN_MOVIE_PROJECTION = {
+            MovieListContract.MovieListEntry._ID,
+            MovieListContract.MovieListEntry.COLUMN_ORIGINAL_TITLE,
+            MovieListContract.MovieListEntry.COLUMN_POSTER_PATH,
+            MovieListContract.MovieListEntry.COLUMN_RELEASE_DATE,
+            MovieListContract.MovieListEntry.COLUMN_OVERVIEW,
+            MovieListContract.MovieListEntry.COLUMN_BACKDROP_PATH,
+            MovieListContract.MovieListEntry.COLUMN_RATING,
+            MovieListContract.MovieListEntry.COLUMN_MOVIEID
+    };
+
+    /*
+     * We store the indices of the values in the array of Strings above to more quickly be able to
+     * access the data from our query. If the order of the Strings above changes, these indices
+     * must be adjusted to match the order of the Strings.
+     */
+    public static final int INDEX_ID = 0;
+    public static final int INDEX_COLUMN_ORIGINAL_TITLE = 1;
+    public static final int INDEX_COLUMN_POSTER_PATH = 2;
+    public static final int INDEX_COLUMN_RELEASE_DATE = 3;
+    public static final int INDEX_COLUMN_OVERVIEW = 4;
+    public static final int INDEX_COLUMN_BACKDROP_PATH = 5;
+    public static final int INDEX_COLUMN_RATING = 6;
+    public static final int INDEX_COLUMN_MOVIEID = 7;
+    public static final String CHECKORDER = "checkOrder";
+    private String sortByOrder;
+
+
+    /*
+     * This ID will be used to identify the Loader responsible for loading our weather forecast. In
+     * some cases, one Activity can deal with many Loaders. However, in our case, there is only one.
+     * We will still use this ID to initialize the loader and create the loader for best practice.
+     */
+    private static final int ID_MOVIE_LOADER = 36;
+    private static final int ID_FAV_LOADER = 38;
 
 
     @Override
@@ -38,6 +87,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         mRecyclerView = (RecyclerView) findViewById(R.id.rv_movie);
         mErrorMessage = (TextView) findViewById(R.id.tv_error_message);
         LinearLayoutManager layoutManager = new GridLayoutManager(MainActivity.this,2);
@@ -46,48 +96,78 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         mMovieAdapter = new MovieAdapter(this, this);
         mRecyclerView.setAdapter(mMovieAdapter);
         mLoadingIndicator = (ProgressBar) findViewById(R.id.pb_loader);
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        String sortByOrder = sharedPreferences.getString(SORT_EXAMPLE, "0");
-        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
 
 
-        if(Integer.parseInt(sortByOrder) == 1){
-            loadMovieData("popular");
-        } else if(Integer.parseInt(sortByOrder) == 0){
-            loadMovieData("top_rated");
+        // Check whether we're recreating a previously destroyed instance
+        if (savedInstanceState != null) {
+            // Restore value of members from saved state
+            sortByOrder = savedInstanceState.getString(CHECKORDER);
+
+            if(Integer.parseInt(sortByOrder) == 2) {
+                MovieListContract.MovieListEntry.buildForAllFav();
+            }
         }
 
+        mLoadingIndicator.setVisibility(View.VISIBLE);
 
-    }
+        getSupportLoaderManager().initLoader(ID_FAV_LOADER, null, this);
+        getSupportLoaderManager().initLoader(ID_MOVIE_LOADER, null, this);
 
 
+        MovieSyncUtils.initialize(this);
 
-
-
-    private void loadMovieData(String orderType){
-
-        showMovieDataView();
-        new FetchMovieTask().execute(orderType);
 
     }
 
     @Override
-    public void onClick(ArrayList<MovieItem> movieForDay, int moviePosition, View view){
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        // Save the user's current game state
+        savedInstanceState.putString(CHECKORDER, sortByOrder);
 
-        ArrayList<MovieItem> movies;
+
+
+        // Always call the superclass so it can save the view hierarchy state
+        super.onSaveInstanceState(savedInstanceState);
+    }
+
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+        // Always call the superclass so it can restore the view hierarchy
+        super.onRestoreInstanceState(savedInstanceState);
+
+
+        // Restore state members from saved instance
+        sortByOrder = savedInstanceState.getString(CHECKORDER);
+
+    }
+
+
+    private String sortOrder(Context context){
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return sharedPreferences.getString(getString(R.string.pref_sort_key), "");
+    }
+
+
+    @Override
+    public void onClick(int moviePosition, View view){
+
+        Uri uriForMovieClicked;
 
         Context context = this;
         Class destinationClass = DetailActivity.class;
         Intent intent = new Intent(context, destinationClass);
-        movies = new ArrayList<>();
-        movies.add(new MovieItem(movieForDay.get(moviePosition).getOriginalTitle(),
-                movieForDay.get(moviePosition).getPosterPath(),
-                movieForDay.get(moviePosition).getReleaseDate(),
-                movieForDay.get(moviePosition).getOverview(),
-                movieForDay.get(moviePosition).getBackdropPath(),
-                movieForDay.get(moviePosition).getRating()));
-        intent.putParcelableArrayListExtra("movieForDay", movies);
+        if(Integer.parseInt(sortByOrder) == 2) {
+
+            uriForMovieClicked = MovieListContract.MovieListEntry.buildFavorite(moviePosition);
+            intent.putExtra("favorite", "fav");
+        } else {
+
+            uriForMovieClicked = MovieListContract.MovieListEntry.buildMovieItemUri(moviePosition);
+
+        }
+        intent.setData(uriForMovieClicked);
         intent.putExtra(DetailActivity.HEADER_ID, moviePosition);
+
         ActivityOptions activityOptionsCompat = ActivityOptions.makeSceneTransitionAnimation(this,
                 view.findViewById(R.id.iv_movie), "poster");
         startActivity(intent, activityOptionsCompat.toBundle());
@@ -108,76 +188,77 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
     }
 
+
     @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
-        if(s.equals(SORT_EXAMPLE)){
-            Log.d("Check return data ", sharedPreferences.getString(s, ""));
-            if(Integer.parseInt(sharedPreferences.getString(s, "")) == 1){
-                loadMovieData("popular");
-            } else if(Integer.parseInt(sharedPreferences.getString(s, "")) == 0){
-                loadMovieData("top_rated");
-            }
+    public Loader<Cursor> onCreateLoader(int loaderId, Bundle bundle) {
+
+        switch (loaderId){
+            case ID_MOVIE_LOADER:
+                Uri movieQueryUri = MovieListContract.MovieListEntry.CONTENT_URI;
+
+                String sortOrder = MovieListContract.MovieListEntry.COLUMN_ORIGINAL_TITLE + " ASC";
+
+                return new CursorLoader(this,
+                        movieQueryUri,
+                        MAIN_MOVIE_PROJECTION,
+                        null,
+                        null,
+                        sortOrder);
+
+
+            case ID_FAV_LOADER:
+                Uri favQueryUri = MovieListContract.MovieListEntry.CONTENT_URI_FAV;
+
+                String sortFavOrder = MovieListContract.MovieListEntry.COLUMN_ORIGINAL_TITLE + " ASC";
+
+                return new CursorLoader(this,
+                        favQueryUri,
+                        MAIN_MOVIE_PROJECTION,
+                        null,
+                        null,
+                        sortFavOrder);
+
+            default:
+                throw new RuntimeException("Loader Not Implemented: " + loaderId);
 
         }
 
     }
 
-    private class FetchMovieTask extends AsyncTask<String, Void, ArrayList<MovieItem>>{
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
 
-        @Override
-        protected void onPreExecute() {
+        mLoadingIndicator.setVisibility(View.VISIBLE);
+        mMovieAdapter.swapCursor(data);
 
-            super.onPreExecute();
-            mLoadingIndicator.setVisibility(View.VISIBLE);
-
+        if(mPosition == RecyclerView.NO_POSITION){
+            mPosition = 0;
         }
 
-        @Override
-        protected ArrayList<MovieItem> doInBackground(String... params) {
+        mRecyclerView.smoothScrollToPosition(mPosition);
 
-            if(params.length == 0){
-                return null;
-            }
-            String sortBy = params[0];
-            URL movieRequestUrl = NetworkUtils.buildUrl(sortBy);
-            try{
-                String jsonMovieResponse = NetworkUtils.getResponseFromHttpUrl(movieRequestUrl);
+        if(data.getCount() != 0){
 
-                @SuppressWarnings("UnnecessaryLocalVariable")
-                ArrayList<MovieItem> simpleMovieData = OpenMovieJsonUtils.getSimpleMovieStringFromJson(MainActivity.this, jsonMovieResponse);
-                return simpleMovieData;
-            } catch (Exception e){
-                e.printStackTrace();
-                return null;
-            }
-
-        }
-
-        @Override
-        protected void onPostExecute(ArrayList<MovieItem> movieData) {
+            showMovieDataView();
             mLoadingIndicator.setVisibility(View.GONE);
-            if(movieData != null) {
-
-                mMovieAdapter.setMovieData(movieData);
-                showMovieDataView();
-
-            } else {
-
-
-                showErrorMessage();
-
-            }
+        } else {
+            showErrorMessage();
         }
+
     }
 
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
 
+        mMovieAdapter.swapCursor(null);
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
 
         MenuInflater inflater = getMenuInflater();
 
-        inflater.inflate(R.menu.movie, menu);
+        inflater.inflate(movie, menu);
         return true;
     }
 
@@ -192,6 +273,19 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
             return true;
         }
 
+
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        sortByOrder = sortOrder(this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        sortByOrder = sortOrder(this);
     }
 }
