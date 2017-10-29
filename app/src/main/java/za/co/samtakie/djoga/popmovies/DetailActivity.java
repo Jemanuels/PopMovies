@@ -1,36 +1,39 @@
 package za.co.samtakie.djoga.popmovies;
 
 import android.content.ContentValues;
-import android.support.design.widget.FloatingActionButton;
-import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Bundle;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
+
+import com.squareup.picasso.Picasso;
+
+import java.net.URL;
+import java.util.ArrayList;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import za.co.samtakie.djoga.popmovies.data.MovieListContract;
 import za.co.samtakie.djoga.popmovies.utilities.NetworkUtils;
 import za.co.samtakie.djoga.popmovies.utilities.OpenReviewJsonUtils;
 import za.co.samtakie.djoga.popmovies.utilities.OpenTrailerJsonUtils;
-import com.squareup.picasso.Picasso;
-import java.net.URL;
-import java.util.ArrayList;
+
 import static za.co.samtakie.djoga.popmovies.R.id.poster;
 
 
@@ -39,22 +42,7 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
         LoaderManager.LoaderCallbacks<Cursor>{
 
 
-    private static final String BASE_URL_TMDB = "http://image.tmdb.org/t/p/";
     public static final String HEADER_ID = "detail_id";
-    private static final int ID_DETAIL_LOADER = 37;
-
-    private ProgressBar mLoadingIndicator;
-    private TextView mErrorMessage;
-
-    private String originalTitle;
-    private String posterPath;
-    private String releaseDate;
-    private String overview;
-    private String backdropPath;
-    private double rating;
-    private int movieID;
-
-
     /*
      * The columns of data that we are interested in displaying within our MainActivity's list of
      * movie data.
@@ -69,7 +57,6 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
             MovieListContract.MovieListEntry.COLUMN_RATING,
             MovieListContract.MovieListEntry.COLUMN_MOVIEID
     };
-
     /*
      * We store the indices of the values in the array of Strings above to more quickly be able to
      * access the data from our query. If the order of the Strings above changes, these indices
@@ -83,27 +70,34 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
     public static final int INDEX_COLUMN_BACKDROP_PATH = 5;
     public static final int INDEX_COLUMN_RATING = 6;
     public static final int INDEX_COLUMN_MOVIEID = 7;
-
-
+    private static final String BASE_URL_TMDB = "http://image.tmdb.org/t/p/";
+    private static final int ID_DETAIL_LOADER = 37;
     @BindView(R.id.title) TextView tvTitle;
     @BindView(R.id.release_date) TextView tvReleaseDate;
     @BindView(R.id.synopsis)TextView tvOverView;
     @BindView(R.id.rating) TextView tvContainer;
     @BindView(poster) ImageView ivPoster;
-
-
+    // RecyclerView to view the trailers of the movie.
+    @BindView(R.id.rv_trailer)
+    RecyclerView mRecyclerView;
+    // RecyclerView to view the review of the movie.
+    @BindView(R.id.rv_review)
+    RecyclerView mReviewRecyclerView;
+    @BindView(R.id.fav_message)
+    CoordinatorLayout mCoordinatorLayout;
     TrailerAdapter mTrailerAdapter;
     ReviewAdapter mReviewAdapter;
-
-    
+    private ProgressBar mLoadingIndicator;
+    private TextView mErrorMessage;
+    private String originalTitle;
+    private String posterPath;
+    private String releaseDate;
+    private String overview;
+    private String backdropPath;
+    private double rating;
+    private int movieID;
     // The URI that is used to access the chosen day's weather details
     private Uri mUri;
-
-    // RecyclerView to view the trailers of the movie.
-    private RecyclerView mRecyclerView;
-
-    // RecyclerView to view the review of the movie.
-    private RecyclerView mReviewRecyclerView;
 
 
     @Override
@@ -111,8 +105,8 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
-        mRecyclerView = (RecyclerView) findViewById(R.id.rv_trailer);
-        mReviewRecyclerView = (RecyclerView) findViewById(R.id.rv_review);
+
+        ButterKnife.bind(this);
 
         LinearLayoutManager layoutManager = new GridLayoutManager(DetailActivity.this,1);
         mRecyclerView.setLayoutManager(layoutManager);
@@ -130,10 +124,9 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
         mLoadingIndicator = (ProgressBar) findViewById(R.id.pb_loader_detail);
         mErrorMessage = (TextView) findViewById(R.id.tv_error_message_detail);
 
-        ButterKnife.bind(this);
+
         
         mUri = getIntent().getData();
-        Log.d("The movie Uri is ", mUri.toString());
         if(mUri == null){
             throw new NullPointerException("URI for DetailActivity cannot be null");
         }
@@ -191,9 +184,15 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
                 if(c.getCount() == 0) {
 
                     getContentResolver().insert(MovieListContract.MovieListEntry.CONTENT_URI_FAV, contentValues);
-                    Toast.makeText(getBaseContext(), originalTitle + " has been added to your favorite", Toast.LENGTH_LONG).show();
+                    //Toast.makeText(getBaseContext(), originalTitle + " has been added to your favorite", Toast.LENGTH_LONG).show();
+                    Snackbar snackbar = Snackbar
+                            .make(mCoordinatorLayout, originalTitle + " has been added to your favorite", Snackbar.LENGTH_LONG);
+                    snackbar.show();
                 }else {
-                    Toast.makeText(getBaseContext(), originalTitle + " is already in your favorite", Toast.LENGTH_LONG).show();
+                    //Toast.makeText(getBaseContext(), originalTitle + " is already in your favorite", Toast.LENGTH_LONG).show();
+                    Snackbar snackbar = Snackbar
+                            .make(mCoordinatorLayout, originalTitle + " is already in your favorite", Snackbar.LENGTH_LONG);
+                    snackbar.show();
 
                 }
             }
@@ -238,21 +237,10 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
     @Override
     public void onClick(ArrayList<TrailerItem> trailerForDay, int trailerPosition, View view) {
 
-        ArrayList<TrailerItem> trailers;
-
-        Context context = this;
-        Class destinationClass = MoviePlayer.class;
-        Intent intent = new Intent(context, destinationClass);
-        trailers = new ArrayList<>();
-        trailers.add(new TrailerItem(trailerForDay.get(trailerPosition).getID(),
-                trailerForDay.get(trailerPosition).getKey(),
-                trailerForDay.get(trailerPosition).getName(),
-                trailerForDay.get(trailerPosition).getSite(),
-                trailerForDay.get(trailerPosition).getSize(),
-                trailerForDay.get(trailerPosition).getType()));
-        intent.putParcelableArrayListExtra("trailerForDay", trailers);
-        intent.putExtra(DetailActivity.HEADER_ID, trailerPosition);
-        startActivity(intent);
+        Intent browserIntent = new Intent(Intent.ACTION_VIEW,
+                Uri.parse("https://www.youtube.com/watch?v=" + trailerForDay.get(trailerPosition)
+                        .getKey()));
+        startActivity(browserIntent);
 
     }
 
@@ -323,6 +311,19 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
 
     }
 
+    private void showTrailerErrorMessage() {
+
+        mErrorMessage.setVisibility(View.VISIBLE);
+        mRecyclerView.setVisibility(View.VISIBLE);
+
+    }
+
+    private void showReviewErrorMessage() {
+
+        mErrorMessage.setVisibility(View.VISIBLE);
+        mReviewRecyclerView.setVisibility(View.VISIBLE);
+
+    }
 
     private class FetchTrailerTask extends AsyncTask<String, Void, ArrayList<TrailerItem>> {
 
@@ -373,7 +374,6 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
         }
     }
 
-
     private class FetchReviewTask extends AsyncTask<String, Void, ArrayList<ReviewItem>> {
 
         @Override
@@ -422,19 +422,6 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
             }
         }
 
-
-    }
-    private void showTrailerErrorMessage(){
-
-        mErrorMessage.setVisibility(View.VISIBLE);
-        mRecyclerView.setVisibility(View.VISIBLE);
-
-    }
-
-    private void showReviewErrorMessage(){
-
-        mErrorMessage.setVisibility(View.VISIBLE);
-        mReviewRecyclerView.setVisibility(View.VISIBLE);
 
     }
 

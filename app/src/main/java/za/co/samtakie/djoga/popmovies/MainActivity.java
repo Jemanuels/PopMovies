@@ -6,15 +6,17 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Bundle;
+import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -32,15 +34,6 @@ public class MainActivity extends AppCompatActivity implements
         MovieAdapter.MovieAdapterOnClickHandler,
         LoaderManager.LoaderCallbacks<Cursor>{
 
-    private RecyclerView mRecyclerView;
-    private MovieAdapter mMovieAdapter;
-    private int mPosition = RecyclerView.NO_POSITION;
-    private TextView mErrorMessage;
-    private ProgressBar mLoadingIndicator;
-
-    // Set the name of the class for using the Log function to print data on the screen
-    private final String TAG = MainActivity.class.getSimpleName();
-
     /*
      * The columns of data that we are interested in displaying within our MainActivity's list of
      * movie data.
@@ -55,7 +48,6 @@ public class MainActivity extends AppCompatActivity implements
             MovieListContract.MovieListEntry.COLUMN_RATING,
             MovieListContract.MovieListEntry.COLUMN_MOVIEID
     };
-
     /*
      * We store the indices of the values in the array of Strings above to more quickly be able to
      * access the data from our query. If the order of the Strings above changes, these indices
@@ -70,61 +62,89 @@ public class MainActivity extends AppCompatActivity implements
     public static final int INDEX_COLUMN_RATING = 6;
     public static final int INDEX_COLUMN_MOVIEID = 7;
     public static final String CHECKORDER = "checkOrder";
-    private String sortByOrder;
-
-
+    private static final String LIST_STATE = "listState";
     /*
-     * This ID will be used to identify the Loader responsible for loading our weather forecast. In
-     * some cases, one Activity can deal with many Loaders. However, in our case, there is only one.
+     * This ID will be used to identify the Loader responsible for loading our movie data.
      * We will still use this ID to initialize the loader and create the loader for best practice.
      */
     private static final int ID_MOVIE_LOADER = 36;
     private static final int ID_FAV_LOADER = 38;
+    // Set the name of the class for using the Log function to print data on the screen
+    private final String TAG = MainActivity.class.getSimpleName();
+    private RecyclerView mRecyclerView;
+    private MovieAdapter mMovieAdapter;
+    private int mPosition = RecyclerView.NO_POSITION;
+    private TextView mErrorMessage;
+    private ProgressBar mLoadingIndicator;
+    private String sortByOrder;
+    private LinearLayoutManager layoutManager;
+    private Parcelable listState;
+    private int scrollPosition;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
 
         mRecyclerView = (RecyclerView) findViewById(R.id.rv_movie);
         mErrorMessage = (TextView) findViewById(R.id.tv_error_message);
-        LinearLayoutManager layoutManager = new GridLayoutManager(MainActivity.this,2);
+        layoutManager = new GridLayoutManager(MainActivity.this, 2);
         mRecyclerView.setLayoutManager(layoutManager);
         mRecyclerView.setHasFixedSize(true);
+
         mMovieAdapter = new MovieAdapter(this, this);
         mRecyclerView.setAdapter(mMovieAdapter);
         mLoadingIndicator = (ProgressBar) findViewById(R.id.pb_loader);
+        Log.d("on create", "activity has been created");
+        String mSortOrder = sortOrder(this);
 
+        Log.d("Sort Order ", mSortOrder);
 
         // Check whether we're recreating a previously destroyed instance
         if (savedInstanceState != null) {
             // Restore value of members from saved state
             sortByOrder = savedInstanceState.getString(CHECKORDER);
-
+            mRecyclerView.scrollToPosition(scrollPosition);
+            Log.d("create position", String.valueOf(scrollPosition));
+            //listState=savedInstanceState.getParcelable("ListState");
             if(Integer.parseInt(sortByOrder) == 2) {
                 MovieListContract.MovieListEntry.buildForAllFav();
+                getSupportLoaderManager().initLoader(ID_FAV_LOADER, null, this);
+            } else {
+                MovieListContract.MovieListEntry.buildForAllMovies();
+                getSupportLoaderManager().initLoader(ID_MOVIE_LOADER, null, this);
+            }
+        } else {
+            sortByOrder = sortOrder(this);
+            if (Integer.parseInt(sortByOrder) == 2) {
+                MovieListContract.MovieListEntry.buildForAllFav();
+                getSupportLoaderManager().initLoader(ID_FAV_LOADER, null, this);
+            } else {
+                MovieListContract.MovieListEntry.buildForAllMovies();
+                getSupportLoaderManager().initLoader(ID_MOVIE_LOADER, null, this);
             }
         }
 
+
         mLoadingIndicator.setVisibility(View.VISIBLE);
 
-        getSupportLoaderManager().initLoader(ID_FAV_LOADER, null, this);
-        getSupportLoaderManager().initLoader(ID_MOVIE_LOADER, null, this);
 
+        MovieSyncUtils.initialize(this, MovieListContract.MovieListEntry.CONTENT_URI);
 
-        MovieSyncUtils.initialize(this);
 
 
     }
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
-        // Save the user's current game state
+        scrollPosition = layoutManager.findFirstVisibleItemPosition();
+        sortByOrder = sortOrder(this);
+        Log.d("scrollPosition ", String.valueOf(scrollPosition));
         savedInstanceState.putString(CHECKORDER, sortByOrder);
-
-
+        savedInstanceState.putInt("scrollPosition", scrollPosition);
 
         // Always call the superclass so it can save the view hierarchy state
         super.onSaveInstanceState(savedInstanceState);
@@ -134,17 +154,16 @@ public class MainActivity extends AppCompatActivity implements
         // Always call the superclass so it can restore the view hierarchy
         super.onRestoreInstanceState(savedInstanceState);
 
-
         // Restore state members from saved instance
+        scrollPosition = savedInstanceState.getInt("scrollPosition");
         sortByOrder = savedInstanceState.getString(CHECKORDER);
-
     }
 
 
     private String sortOrder(Context context){
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        return sharedPreferences.getString(getString(R.string.pref_sort_key), "");
+        return sharedPreferences.getString(getString(R.string.pref_sort_key), "2");
     }
 
 
@@ -195,7 +214,7 @@ public class MainActivity extends AppCompatActivity implements
         switch (loaderId){
             case ID_MOVIE_LOADER:
                 Uri movieQueryUri = MovieListContract.MovieListEntry.CONTENT_URI;
-
+                Log.d("POP/RATED ", "ID_MOVIE_LOADER");
                 String sortOrder = MovieListContract.MovieListEntry.COLUMN_ORIGINAL_TITLE + " ASC";
 
                 return new CursorLoader(this,
@@ -208,7 +227,7 @@ public class MainActivity extends AppCompatActivity implements
 
             case ID_FAV_LOADER:
                 Uri favQueryUri = MovieListContract.MovieListEntry.CONTENT_URI_FAV;
-
+                Log.d("FAV ", "ID_FAV_LOADER");
                 String sortFavOrder = MovieListContract.MovieListEntry.COLUMN_ORIGINAL_TITLE + " ASC";
 
                 return new CursorLoader(this,
@@ -280,12 +299,43 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onStart() {
         super.onStart();
-        sortByOrder = sortOrder(this);
+        if (sortByOrder != null) {
+
+            if (Integer.parseInt(sortByOrder) == 2) {
+                MovieListContract.MovieListEntry.buildForAllFav();
+                getSupportLoaderManager().initLoader(ID_FAV_LOADER, null, this);
+            } else {
+                MovieListContract.MovieListEntry.buildForAllMovies();
+                getSupportLoaderManager().initLoader(ID_MOVIE_LOADER, null, this);
+            }
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        sortByOrder = sortOrder(this);
+
+        if (sortByOrder != null) {
+            if (Integer.parseInt(sortByOrder) == 2) {
+                MovieListContract.MovieListEntry.buildForAllFav();
+                getSupportLoaderManager().initLoader(ID_FAV_LOADER, null, this);
+                Log.d("resume fav order ", String.valueOf(sortByOrder));
+            } else {
+                MovieListContract.MovieListEntry.buildForAllMovies();
+                getSupportLoaderManager().initLoader(ID_MOVIE_LOADER, null, this);
+                Log.d("resume p/r order ", String.valueOf(sortByOrder));
+            }
+
+        }
+
+
+        mRecyclerView.scrollToPosition(scrollPosition);
+        Log.d("resume position ", String.valueOf(scrollPosition));
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+
     }
 }

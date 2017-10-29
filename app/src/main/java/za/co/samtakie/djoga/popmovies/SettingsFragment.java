@@ -51,12 +51,14 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
 
 
         if (key.equals(getString(R.string.pref_sort_key)) && fav.equals("2")) {
-
+            MoviePreferences.getSortOrder(activity);
             activity.getContentResolver().notifyChange(MovieListContract.MovieListEntry.CONTENT_URI_FAV, null);
+            Log.d("Favorite ", "Has been clicked");
         }else {
             MoviePreferences.getSortOrder(activity);
             MovieSyncUtils.startImmediateSync(activity);
             activity.getContentResolver().notifyChange(MovieListContract.MovieListEntry.CONTENT_URI, null);
+            Log.d("Top/Pop ", "Has been clicked");
         }
 
 

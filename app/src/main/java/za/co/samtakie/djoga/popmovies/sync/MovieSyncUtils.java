@@ -17,7 +17,7 @@ public class MovieSyncUtils {
 
     private static boolean sInitialized;
 
-    synchronized public static void initialize(@NonNull final Context context) {
+    synchronized public static void initialize(@NonNull final Context context, final Uri uri) {
 
         /*
          * Only perform initialization once per app lifetime. If initialization has already been
@@ -40,7 +40,7 @@ public class MovieSyncUtils {
             public void run() {
 
                 /* URI for every row of weather data in our weather table*/
-                Uri movieQueryUri = MovieListContract.MovieListEntry.CONTENT_URI;
+                Uri movieQueryUri = uri;
 
                 /*
                  * Since this query is going to be used only as a check to see if we have any

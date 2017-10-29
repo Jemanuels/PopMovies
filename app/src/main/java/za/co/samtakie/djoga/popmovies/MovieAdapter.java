@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+
 import com.squareup.picasso.Picasso;
 
 
@@ -19,19 +20,9 @@ import com.squareup.picasso.Picasso;
 
 public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapterViewHolder> {
 
+    private static final String TAG = "MainActivity";
     private final Context contextMain;
     private final MovieAdapterOnClickHandler mMovieClickHandler;
-    private static final String TAG = "MainActivity";
-
-    /**
-     * An on-click handler that we're defined to make it easy for an Activity to interface with
-     * our RecyclerView
-     */
-    public interface MovieAdapterOnClickHandler{
-        //void onClick(Cursor movieForDay, int moviePosition, View view);
-        void onClick(int moviePosition, View view);
-    }
-
     // Declare a private Cursor field called mCursor
     private Cursor mCursor;
 
@@ -39,29 +30,6 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
         this.contextMain = context;
         mMovieClickHandler = clickHandler;
         Log.d(TAG, "Item has been clicked");
-
-    }
-
-    public class MovieAdapterViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
-
-        public final ImageView mMovieImageView;
-        public MovieAdapterViewHolder(View view){
-
-            super(view);
-            mMovieImageView = (ImageView) view.findViewById(R.id.iv_movie);
-            view.setOnClickListener(this);
-
-        }
-
-        @Override
-        public void onClick(View view) {
-
-            int adapterPosition = getAdapterPosition();
-
-            mCursor.moveToPosition(adapterPosition);
-            int mMovieID = mCursor.getInt(MainActivity.INDEX_COLUMN_MOVIEID);
-            mMovieClickHandler.onClick(mMovieID, view);
-        }
 
     }
 
@@ -74,8 +42,6 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
         View view = inflater.inflate(layoutIdForListItem, parent, false);
         return new MovieAdapterViewHolder(view);
     }
-
-
 
     @Override
     public void onBindViewHolder(final MovieAdapterViewHolder holder, int position) {
@@ -104,5 +70,40 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
     void swapCursor(Cursor newCursor){
         mCursor = newCursor;
         notifyDataSetChanged();
+    }
+
+    /**
+     * An on-click handler that we're defined to make it easy for an Activity to interface with
+     * our RecyclerView
+     */
+    public interface MovieAdapterOnClickHandler {
+        //void onClick(Cursor movieForDay, int moviePosition, View view);
+        void onClick(int moviePosition, View view);
+    }
+
+    public class MovieAdapterViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+
+        public final ImageView mMovieImageView;
+
+        public MovieAdapterViewHolder(View view) {
+
+            super(view);
+            mMovieImageView = (ImageView) view.findViewById(R.id.iv_movie);
+            view.setOnClickListener(this);
+
+        }
+
+        @Override
+        public void onClick(View view) {
+
+            int adapterPosition = getAdapterPosition();
+
+            mCursor.moveToPosition(adapterPosition);
+            int mMovieID = mCursor.getInt(MainActivity.INDEX_COLUMN_MOVIEID);
+            mMovieClickHandler.onClick(mMovieID, view);
+        }
+
+
+
     }
 }

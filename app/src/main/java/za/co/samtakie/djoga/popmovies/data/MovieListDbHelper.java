@@ -28,7 +28,7 @@ public class MovieListDbHelper extends SQLiteOpenHelper {
             MovieListContract.MovieListEntry.COLUMN_RATING + " REAL," +
             MovieListContract.MovieListEntry.COLUMN_MOVIEID + " REAL NOT NULL)";
 
-    private static final String SQL_CREATE_FAV = "CREATE TABLE " + MovieListContract.MovieListEntry.TABLE_NAME_FAV + " (" +
+    private static final String SQL_CREATE_FAV = "CREATE TABLE IF NOT EXISTS " + MovieListContract.MovieListEntry.TABLE_NAME_FAV + " (" +
             MovieListContract.MovieListEntry._ID + " INTEGER PRIMARY KEY," +
             MovieListContract.MovieListEntry.COLUMN_ORIGINAL_TITLE + " TEXT NOT NULL," +
             MovieListContract.MovieListEntry.COLUMN_POSTER_PATH + " TEXT NOT NULL," +
@@ -40,9 +40,6 @@ public class MovieListDbHelper extends SQLiteOpenHelper {
 
     private static final String SQL_DELETE_ENTRIES = "DROP TABLE IF EXISTS " +
             MovieListContract.MovieListEntry.TABLE_NAME;
-
-    private static final String SQL_DELETE_FAV = "DROP TABLE IF EXISTS " +
-            MovieListContract.MovieListEntry.TABLE_NAME_FAV;
 
 
 
@@ -59,7 +56,8 @@ public class MovieListDbHelper extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL(SQL_DELETE_ENTRIES);
-        db.execSQL(SQL_DELETE_FAV);
+        //For Table TABLE_NAME_FAV we will be using Alter instead of DROP TABLE
+        //
         onCreate(db);
     }
 }
