@@ -131,7 +131,9 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
             throw new NullPointerException("URI for DetailActivity cannot be null");
         }
 
-        FloatingActionButton fabButton = (FloatingActionButton) findViewById(R.id.fab);
+        final FloatingActionButton fabButton = (FloatingActionButton) findViewById(R.id.fab);
+        final FloatingActionButton delFabButton = (FloatingActionButton) findViewById(R.id.del_fab);
+        delFabButton.hide();
         Bundle bd = getIntent().getExtras();
         String favorite;
         favorite = bd.getString("favorite");
@@ -139,8 +141,10 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
 
             if(favorite.equals("fav")){
                 fabButton.hide();
+                delFabButton.show();
             } else {
                 fabButton.show();
+                delFabButton.hide();
             }
 
         }
@@ -188,11 +192,71 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
                     Snackbar snackbar = Snackbar
                             .make(mCoordinatorLayout, originalTitle + " has been added to your favorite", Snackbar.LENGTH_LONG);
                     snackbar.show();
+                    fabButton.hide();
+                    delFabButton.show();
                 }else {
                     //Toast.makeText(getBaseContext(), originalTitle + " is already in your favorite", Toast.LENGTH_LONG).show();
                     Snackbar snackbar = Snackbar
                             .make(mCoordinatorLayout, originalTitle + " is already in your favorite", Snackbar.LENGTH_LONG);
                     snackbar.show();
+                    delFabButton.show();
+                    fabButton.hide();
+
+                }
+            }
+        });
+
+        /*
+         Set the Floating Action Button (FAB) to its corresponding View.
+         Attach an OnClickListener to it, so that when it's clicked, a new movie will be deleted from
+         * the favorite table
+         */
+        delFabButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View view) {
+
+                String[] mProjection = {MovieListContract.MovieListEntry.COLUMN_MOVIEID};
+                String mSelectionClause = MovieListContract.MovieListEntry.COLUMN_MOVIEID + " = ?";
+                String[] selectionArgs = {""};
+                selectionArgs[0] = String.valueOf(movieID);
+
+                // Insert movie to favorite table via a ContentResolver
+                // Create new empty ContentValues object
+                ContentValues contentValues = new ContentValues();
+                // Put the movie details into the ContentValues
+                contentValues.put(MovieListContract.MovieListEntry.COLUMN_RELEASE_DATE, releaseDate);
+                contentValues.put(MovieListContract.MovieListEntry.COLUMN_POSTER_PATH, posterPath);
+                contentValues.put(MovieListContract.MovieListEntry.COLUMN_OVERVIEW, overview);
+                contentValues.put(MovieListContract.MovieListEntry.COLUMN_ORIGINAL_TITLE, originalTitle);
+                contentValues.put(MovieListContract.MovieListEntry.COLUMN_BACKDROP_PATH, backdropPath);
+                contentValues.put(MovieListContract.MovieListEntry.COLUMN_RATING, rating);
+                contentValues.put(MovieListContract.MovieListEntry.COLUMN_MOVIEID, movieID);
+
+                Cursor c = getContentResolver().query(
+                        MovieListContract.MovieListEntry.CONTENT_URI_FAV,
+                        mProjection,
+                        mSelectionClause,
+                        selectionArgs,
+                        null);
+                // Check and make sure the movie  exits in the fav table
+                // If it is delete the data and inform the user
+                assert c != null;
+                if (c.getCount() != 0) {
+
+                    getContentResolver().delete(MovieListContract.MovieListEntry.CONTENT_URI_FAV, mSelectionClause, selectionArgs);
+                    Snackbar snackbar = Snackbar
+                            .make(mCoordinatorLayout, originalTitle + " has been removed from your favorite", Snackbar.LENGTH_LONG);
+                    snackbar.show();
+                    fabButton.show();
+                    delFabButton.hide();
+                } else {
+
+                    Snackbar snackbar = Snackbar
+                            .make(mCoordinatorLayout, originalTitle + " is already removed from your favorite", Snackbar.LENGTH_LONG);
+                    snackbar.show();
+                    delFabButton.hide();
+                    fabButton.show();
 
                 }
             }

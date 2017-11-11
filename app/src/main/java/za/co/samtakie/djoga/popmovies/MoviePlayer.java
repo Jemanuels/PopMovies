@@ -4,11 +4,12 @@ package za.co.samtakie.djoga.popmovies;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Toast;
+
 import com.google.android.youtube.player.YouTubeBaseActivity;
 import com.google.android.youtube.player.YouTubeInitializationResult;
 import com.google.android.youtube.player.YouTubePlayer;
-import com.google.android.youtube.player.YouTubePlayerView;
 import com.google.android.youtube.player.YouTubePlayer.Provider;
+import com.google.android.youtube.player.YouTubePlayerView;
 
 import java.util.ArrayList;
 
@@ -17,7 +18,7 @@ public class MoviePlayer extends YouTubeBaseActivity implements YouTubePlayer.On
 
     private static final int RECOVERY_REQUEST = 1;
 
-    private static final String youtubeApiKey = BuildConfig.YOUTUBE_API_KEY;
+    private static final String youtubeApiKey = "BuildConfig.YOUTUBE_API_KEY";
 
     private String trailerKey;
     private YouTubePlayerView youTubePlayerView;

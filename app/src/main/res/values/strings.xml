@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">Popular Movies</string>
     <string name="error_message">Please try again later</string>
+    <string name="fav_error_message">
+        There is no movie in your favorite list, please add movies from popular or top rated.
+    </string>
     <string name="title_activity_settings">Settings</string>
     <string name="poster_description">movie poster image thumbnail</string>
     <string name="movie_overview">Movie Overview</string>

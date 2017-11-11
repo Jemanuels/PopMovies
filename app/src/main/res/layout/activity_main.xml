@@ -7,25 +7,34 @@
     tools:ignore="MergeRootFrame">
 
     <android.support.v7.widget.RecyclerView
+        android:id="@+id/rv_movie"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/rv_movie"
         android:scrollbars="vertical"/>
 
     <TextView
+        android:id="@+id/tv_error_message"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/tv_error_message"
         android:padding="16dp"
+        android:text="@string/error_message"
         android:textSize="20sp"
-        android:visibility="invisible"
-        android:text="@string/error_message"/>
+        android:visibility="invisible" />
+
+    <TextView
+        android:id="@+id/fav_error_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:text="@string/fav_error_message"
+        android:textSize="20sp"
+        android:visibility="invisible" />
 
     <ProgressBar
+        android:id="@+id/pb_loader"
         android:layout_width="42dp"
         android:layout_height="42dp"
         android:layout_gravity="center"
-        android:visibility="invisible"
-        android:id="@+id/pb_loader"/>
+        android:visibility="invisible" />
 
 </FrameLayout>

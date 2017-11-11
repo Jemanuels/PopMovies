@@ -16,6 +16,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -80,6 +81,7 @@ public class MainActivity extends AppCompatActivity implements
     private LinearLayoutManager layoutManager;
     private Parcelable listState;
     private int scrollPosition;
+    private TextView mFavErrorMessage;
 
 
     @Override
@@ -91,7 +93,8 @@ public class MainActivity extends AppCompatActivity implements
 
         mRecyclerView = (RecyclerView) findViewById(R.id.rv_movie);
         mErrorMessage = (TextView) findViewById(R.id.tv_error_message);
-        layoutManager = new GridLayoutManager(MainActivity.this, 2);
+        mFavErrorMessage = (TextView) findViewById(R.id.fav_error_message);
+        layoutManager = new GridLayoutManager(MainActivity.this, numberOfColumns());
         mRecyclerView.setLayoutManager(layoutManager);
         mRecyclerView.setHasFixedSize(true);
 
@@ -140,7 +143,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
-        scrollPosition = layoutManager.findFirstVisibleItemPosition();
+        scrollPosition = layoutManager.findFirstCompletelyVisibleItemPosition();
         sortByOrder = sortOrder(this);
         Log.d("scrollPosition ", String.valueOf(scrollPosition));
         savedInstanceState.putString(CHECKORDER, sortByOrder);
@@ -191,19 +194,40 @@ public class MainActivity extends AppCompatActivity implements
                 view.findViewById(R.id.iv_movie), "poster");
         startActivity(intent, activityOptionsCompat.toBundle());
 
+
     }
 
     private void showMovieDataView(){
 
         mErrorMessage.setVisibility(View.INVISIBLE);
+        mFavErrorMessage.setVisibility(View.INVISIBLE);
         mRecyclerView.setVisibility(View.VISIBLE);
 
     }
 
+    private int numberOfColumns() {
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+
+        int widthDivider = 400;
+        int width = displayMetrics.widthPixels;
+        int nColumns = width / widthDivider;
+        if (nColumns < 2) {
+            return 2;
+        }
+        return nColumns;
+    }
+
     private void showErrorMessage(){
 
-        mRecyclerView.setVisibility(View.INVISIBLE);
-        mErrorMessage.setVisibility(View.VISIBLE);
+
+        if (Integer.valueOf(sortByOrder) == 2) {
+            mRecyclerView.setVisibility(View.INVISIBLE);
+            mFavErrorMessage.setVisibility(View.VISIBLE);
+        } else {
+            mRecyclerView.setVisibility(View.INVISIBLE);
+            mErrorMessage.setVisibility(View.VISIBLE);
+        }
 
     }
 
@@ -309,6 +333,7 @@ public class MainActivity extends AppCompatActivity implements
                 getSupportLoaderManager().initLoader(ID_MOVIE_LOADER, null, this);
             }
         }
+
     }
 
     @Override
@@ -336,6 +361,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onRestart() {
         super.onRestart();
+        mRecyclerView.scrollToPosition(scrollPosition);
 
     }
 }
