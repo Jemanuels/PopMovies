@@ -17,17 +17,8 @@ import java.util.ArrayList;
 public class TrailerAdapter extends RecyclerView.Adapter<TrailerAdapter.TrailerAdapterViewHolder> {
 
 
-    private ArrayList<TrailerItem> trailerItem;
     private final TrailerAdapterOnClickHandler mTrailerClickHandler;
-
-    /**
-     * An on-click handler that we're defined to make it easy for an Activity to interface with
-     * our RecyclerView
-     */
-    public interface TrailerAdapterOnClickHandler{
-        @SuppressWarnings("UnusedParameters")
-        void onClick(ArrayList<TrailerItem> trailerForDay, int trailerPosition, View view);
-    }
+    private ArrayList<TrailerItem> trailerItem;
 
     public TrailerAdapter(TrailerAdapterOnClickHandler clickHandler, Context context){
 
@@ -35,26 +26,8 @@ public class TrailerAdapter extends RecyclerView.Adapter<TrailerAdapter.TrailerA
 
     }
 
-    public class TrailerAdapterViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
-
-        public final TextView mTrailerTextView;
-        public TrailerAdapterViewHolder(View view){
-
-            super(view);
-            mTrailerTextView = (TextView) view.findViewById(R.id.tv_trailer);
-            view.setOnClickListener(this);
-
-        }
-
-        @Override
-        public void onClick(View view) {
-
-            int adapterPosition = getAdapterPosition();
-            ArrayList<TrailerItem> trailerForDay = trailerItem;
-            mTrailerClickHandler.onClick(trailerForDay, adapterPosition, view);
-
-        }
-
+    public ArrayList<TrailerItem> getTrailerItem() {
+        return new ArrayList<TrailerItem>(trailerItem);
     }
 
     @Override
@@ -66,8 +39,6 @@ public class TrailerAdapter extends RecyclerView.Adapter<TrailerAdapter.TrailerA
         View view = inflater.inflate(layoutIdForListItem, parent, false);
         return new TrailerAdapterViewHolder(view);
     }
-
-
 
     @Override
     public void onBindViewHolder(final TrailerAdapterViewHolder holder, int position) {
@@ -90,12 +61,42 @@ public class TrailerAdapter extends RecyclerView.Adapter<TrailerAdapter.TrailerA
         }
     }
 
-
-
     public void setTrailerData(ArrayList<TrailerItem> trailerData){
 
         trailerItem = trailerData;
         notifyDataSetChanged();
+
+    }
+
+    /**
+     * An on-click handler that we're defined to make it easy for an Activity to interface with
+     * our RecyclerView
+     */
+    public interface TrailerAdapterOnClickHandler {
+        @SuppressWarnings("UnusedParameters")
+        void onClick(ArrayList<TrailerItem> trailerForDay, int trailerPosition, View view);
+    }
+
+    public class TrailerAdapterViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+
+        public final TextView mTrailerTextView;
+
+        public TrailerAdapterViewHolder(View view) {
+
+            super(view);
+            mTrailerTextView = (TextView) view.findViewById(R.id.tv_trailer);
+            view.setOnClickListener(this);
+
+        }
+
+        @Override
+        public void onClick(View view) {
+
+            int adapterPosition = getAdapterPosition();
+            ArrayList<TrailerItem> trailerForDay = trailerItem;
+            mTrailerClickHandler.onClick(trailerForDay, adapterPosition, view);
+
+        }
 
     }
 

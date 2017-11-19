@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -20,6 +21,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
@@ -72,11 +74,19 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
     public static final int INDEX_COLUMN_MOVIEID = 7;
     private static final String BASE_URL_TMDB = "http://image.tmdb.org/t/p/";
     private static final int ID_DETAIL_LOADER = 37;
+
+    //  two static variable,
+    public static int scrollX;
+    public static int scrollY;
+
     @BindView(R.id.title) TextView tvTitle;
     @BindView(R.id.release_date) TextView tvReleaseDate;
     @BindView(R.id.synopsis)TextView tvOverView;
     @BindView(R.id.rating) TextView tvContainer;
     @BindView(poster) ImageView ivPoster;
+    @BindView(R.id.scrollMain)
+    ScrollView mScrollView;
+
     // RecyclerView to view the trailers of the movie.
     @BindView(R.id.rv_trailer)
     RecyclerView mRecyclerView;
@@ -87,6 +97,7 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
     CoordinatorLayout mCoordinatorLayout;
     TrailerAdapter mTrailerAdapter;
     ReviewAdapter mReviewAdapter;
+    Parcelable mListState;
     private ProgressBar mLoadingIndicator;
     private TextView mErrorMessage;
     private String originalTitle;
@@ -96,8 +107,15 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
     private String backdropPath;
     private double rating;
     private int movieID;
+    private int scrollPositionTrailer;
+    private int scrollPositionReview;
+    private boolean mLoaderStarted;
     // The URI that is used to access the chosen day's weather details
     private Uri mUri;
+    // this variable will hold the image url for saving this in the saveinstance bundle
+    private String imageUrl;
+    private LinearLayoutManager reviewLayoutManager;
+    private LinearLayoutManager layoutManager;
 
 
     @Override
@@ -106,18 +124,22 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
 
+
         ButterKnife.bind(this);
 
-        LinearLayoutManager layoutManager = new GridLayoutManager(DetailActivity.this,1);
+        layoutManager = new GridLayoutManager(DetailActivity.this, 1);
         mRecyclerView.setLayoutManager(layoutManager);
         mRecyclerView.setHasFixedSize(true);
+        mRecyclerView.setNestedScrollingEnabled(false);
 
-        LinearLayoutManager reviewLayoutManager = new GridLayoutManager(DetailActivity.this,1);
+        reviewLayoutManager = new GridLayoutManager(DetailActivity.this, 1);
         mReviewRecyclerView.setLayoutManager(reviewLayoutManager);
         mReviewRecyclerView.setHasFixedSize(true);
+        mReviewRecyclerView.setNestedScrollingEnabled(false);
 
         mTrailerAdapter = new TrailerAdapter(this, this);
         mReviewAdapter = new ReviewAdapter(this);
+
         mRecyclerView.setAdapter(mTrailerAdapter);
         mReviewRecyclerView.setAdapter(mReviewAdapter);
 
@@ -125,7 +147,6 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
         mErrorMessage = (TextView) findViewById(R.id.tv_error_message_detail);
 
 
-        
         mUri = getIntent().getData();
         if(mUri == null){
             throw new NullPointerException("URI for DetailActivity cannot be null");
@@ -261,9 +282,77 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
                 }
             }
         });
-        
+
+
+        if (savedInstanceState != null) {
+
+            loadThumbnail(savedInstanceState.getString("imageUrl"));
+            mLoaderStarted = savedInstanceState.getBoolean("True");
+            mRecyclerView.scrollToPosition(scrollPositionTrailer);
+            mReviewRecyclerView.scrollToPosition(scrollPositionReview);
+            final int[] position = savedInstanceState.getIntArray("SCROLL_POSITION");
+            if (position != null)
+                scrollX = position[0];
+            scrollY = position[1];
+            mScrollView.post(new Runnable() {
+                public void run() {
+                    mScrollView.scrollTo(position[0], position[1]);
+
+
+                }
+            });
+
+        }
         getSupportLoaderManager().initLoader(ID_DETAIL_LOADER, null, this);
 
+
+    }
+
+    //save value on onSaveInstanceState
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putIntArray("SCROLL_POSITION",
+                new int[]{mScrollView.getScrollX(), mScrollView.getScrollY()});
+
+        // Save list state
+        mListState = mRecyclerView.getLayoutManager().onSaveInstanceState();
+        outState.putParcelable("mListState", mListState);
+        // putting recyclerview items
+        outState.putParcelableArrayList("mTrailerAdapter", mTrailerAdapter.getTrailerItem());
+        super.onSaveInstanceState(outState);
+
+        scrollPositionTrailer = layoutManager.findFirstCompletelyVisibleItemPosition();
+        scrollPositionReview = reviewLayoutManager.findFirstCompletelyVisibleItemPosition();
+
+        outState.putInt("scrollPositionTrailer", scrollPositionTrailer);
+        outState.putInt("scrollPositionReview", scrollPositionReview);
+
+    }
+
+    //Restore them on onRestoreInstanceState
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        scrollPositionTrailer = savedInstanceState.getInt("scrollPositionTrailer");
+        scrollPositionReview = savedInstanceState.getInt("scrollPositionReview");
+
+        if (savedInstanceState != null) {
+            mListState = savedInstanceState.getParcelable("mListState");
+            mReviewRecyclerView.getLayoutManager().onRestoreInstanceState(mListState);
+            // make sure that you capture the image url to orientation changed
+            imageUrl = savedInstanceState.getString("imageUrl");
+        }
+
+        final int[] position = savedInstanceState.getIntArray("SCROLL_POSITION");
+        scrollY = position[1];
+        scrollX = position[0];
+        if (position != null)
+            mScrollView.post(new Runnable() {
+                public void run() {
+                    mScrollView.scrollTo(position[0], position[1]);
+
+                }
+            });
     }
 
     private void loadTrailerData(String pathType){
@@ -271,6 +360,8 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
         //showMovieDataView();
         new FetchTrailerTask().execute(pathType);
         new FetchReviewTask().execute(pathType);
+
+        mScrollView.scrollTo(0, 500);
 
     }
 
@@ -304,7 +395,16 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
         Intent browserIntent = new Intent(Intent.ACTION_VIEW,
                 Uri.parse("https://www.youtube.com/watch?v=" + trailerForDay.get(trailerPosition)
                         .getKey()));
-        startActivity(browserIntent);
+
+        // Verify that the intent will resolve to an activity
+        if (browserIntent.resolveActivity(getPackageManager()) != null) {
+            startActivity(browserIntent);
+        } else {
+            Snackbar snackbar = Snackbar
+                    .make(mCoordinatorLayout, "No app has been installed to view the trailer, please check with your administrator", Snackbar.LENGTH_LONG);
+            snackbar.show();
+        }
+
 
     }
 
@@ -344,6 +444,9 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
         //The movie thumbnail //
         String moviePath = data.getString(INDEX_COLUMN_POSTER_PATH);
         String posterW185 = "w185";
+
+        ivPoster.setTag(BASE_URL_TMDB + posterW185 + moviePath);
+        imageUrl = (String) ivPoster.getTag();
         loadThumbnail(BASE_URL_TMDB + posterW185 + moviePath);
         posterPath = moviePath;
 
@@ -387,6 +490,49 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
         mErrorMessage.setVisibility(View.VISIBLE);
         mReviewRecyclerView.setVisibility(View.VISIBLE);
 
+
+    }
+
+
+    //update & save their value on onPause & onResume.
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+
+    }
+
+    @Override
+    protected void onResume() {
+
+        super.onResume();
+        if (mListState != null) {
+            layoutManager.onRestoreInstanceState(mListState);
+        }
+
+
+//this is important. scrollTo doesn't work in main thread.
+        mScrollView.post(new Runnable() {
+            @Override
+            public void run() {
+                mScrollView.scrollTo(scrollX, scrollY);
+            }
+        });
+    }
+
+    @Override
+    protected void onRestart() {
+
+        getSupportLoaderManager().restartLoader(ID_DETAIL_LOADER, null, this);
+
+        super.onRestart();
+
+        mScrollView.post(new Runnable() {
+            @Override
+            public void run() {
+                mScrollView.scrollTo(scrollX, scrollY);
+            }
+        });
     }
 
     private class FetchTrailerTask extends AsyncTask<String, Void, ArrayList<TrailerItem>> {
@@ -488,5 +634,6 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
 
 
     }
+
 
 }

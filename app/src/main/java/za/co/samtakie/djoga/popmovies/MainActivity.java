@@ -166,7 +166,7 @@ public class MainActivity extends AppCompatActivity implements
     private String sortOrder(Context context){
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        return sharedPreferences.getString(getString(R.string.pref_sort_key), "2");
+        return sharedPreferences.getString(getString(R.string.pref_sort_key), "0");
     }
 
 
