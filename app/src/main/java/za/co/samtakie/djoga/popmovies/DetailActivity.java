@@ -17,6 +17,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
@@ -116,6 +117,11 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
     private String imageUrl;
     private LinearLayoutManager reviewLayoutManager;
     private LinearLayoutManager layoutManager;
+
+    private ArrayList<ReviewItem> dataReview;
+    private ArrayList<TrailerItem> dataTrailer;
+
+    private String idMovie;
 
 
     @Override
@@ -282,9 +288,14 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
                 }
             }
         });
-
+        getSupportLoaderManager().initLoader(ID_DETAIL_LOADER, null, this);
 
         if (savedInstanceState != null) {
+
+            ArrayList<ReviewItem> reviewdata = savedInstanceState.getParcelableArrayList("dataReview");
+            ArrayList<TrailerItem> trailerdata = savedInstanceState.getParcelableArrayList("dataTrailer");
+            mTrailerAdapter.setTrailerData(trailerdata);
+            mReviewAdapter.setReviewData(reviewdata);
 
             loadThumbnail(savedInstanceState.getString("imageUrl"));
             mLoaderStarted = savedInstanceState.getBoolean("True");
@@ -296,14 +307,16 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
             scrollY = position[1];
             mScrollView.post(new Runnable() {
                 public void run() {
-                    mScrollView.scrollTo(position[0], position[1]);
+                    mScrollView.scrollTo(scrollX, scrollY);
 
 
                 }
             });
 
+        } else {
+
         }
-        getSupportLoaderManager().initLoader(ID_DETAIL_LOADER, null, this);
+
 
 
     }
@@ -315,11 +328,14 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
         outState.putIntArray("SCROLL_POSITION",
                 new int[]{mScrollView.getScrollX(), mScrollView.getScrollY()});
 
+        outState.putString("idMovie", idMovie);
+
         // Save list state
         mListState = mRecyclerView.getLayoutManager().onSaveInstanceState();
         outState.putParcelable("mListState", mListState);
         // putting recyclerview items
-        outState.putParcelableArrayList("mTrailerAdapter", mTrailerAdapter.getTrailerItem());
+        outState.putParcelableArrayList("dataReview", dataReview);
+        outState.putParcelableArrayList("dataTrailer", dataTrailer);
         super.onSaveInstanceState(outState);
 
         scrollPositionTrailer = layoutManager.findFirstCompletelyVisibleItemPosition();
@@ -341,6 +357,7 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
             mReviewRecyclerView.getLayoutManager().onRestoreInstanceState(mListState);
             // make sure that you capture the image url to orientation changed
             imageUrl = savedInstanceState.getString("imageUrl");
+            idMovie = savedInstanceState.getString("idMovie");
         }
 
         final int[] position = savedInstanceState.getIntArray("SCROLL_POSITION");
@@ -361,7 +378,7 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
         new FetchTrailerTask().execute(pathType);
         new FetchReviewTask().execute(pathType);
 
-        mScrollView.scrollTo(0, 500);
+        //mScrollView.scrollTo(0, 500);
 
     }
 
@@ -457,7 +474,8 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
 
         // MovieID
         String mMovieId = String.valueOf(data.getInt(INDEX_COLUMN_MOVIEID));
-        loadTrailerData(mMovieId);
+        idMovie = mMovieId;
+        loadTrailerData(idMovie);
         movieID = data.getInt(INDEX_COLUMN_MOVIEID);
 
         // Movie overview //
@@ -469,6 +487,16 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
         String movieReleaseDate = data.getString(INDEX_COLUMN_RELEASE_DATE);
         tvReleaseDate.setText(movieReleaseDate);
         releaseDate = movieReleaseDate;
+
+        if (mLoaderStarted) {
+
+            mScrollView.post(new Runnable() {
+                public void run() {
+                    Log.d("This should work ", "" + scrollY);
+                    mScrollView.scrollTo(scrollX, scrollY);
+                }
+            });
+        }
     }
 
 
@@ -571,7 +599,7 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
         protected void onPostExecute(ArrayList<TrailerItem> trailerData) {
             mLoadingIndicator.setVisibility(View.GONE);
             if(trailerData != null) {
-
+                dataTrailer = trailerData;
                 mTrailerAdapter.setTrailerData(trailerData);
 
 
@@ -620,7 +648,7 @@ public class DetailActivity extends AppCompatActivity implements TrailerAdapter.
         protected void onPostExecute(ArrayList<ReviewItem> reviewData) {
             mLoadingIndicator.setVisibility(View.GONE);
             if(reviewData != null) {
-
+                dataReview = reviewData;
                 mReviewAdapter.setReviewData(reviewData);
 
 
