@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Popular Movies</string>
+    <string name="app_name">Movies</string>
     <string name="error_message">Please try again later</string>
     <string name="fav_error_message">
         There is no movie in your favorite list, please add movies from popular or top rated.
